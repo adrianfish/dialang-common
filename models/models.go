@@ -52,6 +52,16 @@ type Answer struct {
 	Correct int `json:"correct"`
 }
 
+type ItemGrade struct {
+	Tl string
+	Skill string
+	BookletId int
+	RawScore int
+	PPE float64
+	SE float64
+	Grade int
+}
+
 type SAStatement struct {
 	Locale string
 	Skill string

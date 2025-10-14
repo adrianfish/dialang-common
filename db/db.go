@@ -364,6 +364,25 @@ func GetItemsForBasket(basketId int) []models.Item {
 	return items;
 }
 
+func GetAnswers() []models.Answer {
+
+	rows, err := db.Query("SELECT * FROM answers")
+	if err != nil {
+		log.Fatal(err)
+	}
+	defer rows.Close()
+
+	answers := []models.Answer{}
+	for rows.Next() {
+		var answer models.Answer
+		if err := rows.Scan(&answer.Id, &answer.ItemId, &answer.Text, &answer.Correct); err != nil {
+			log.Fatal(err)
+		}
+		answers = append(answers, answer)
+	}
+	return answers
+}
+
 func GetAnswersForItem(itemId int) []models.Answer {
 
 	rows, err := db.Query("SELECT * FROM answers WHERE item_id = $1", itemId)
@@ -423,7 +442,7 @@ func getAnswers() ([]models.Answer, error) {
 func GetItem(itemId int) (*models.Item, error) {
 
 	if len(itemMap) == 0 {
-		if items, err := getItems(); err == nil {
+		if items, err := GetItems(); err == nil {
 			for _, item := range items {
 				itemMap[item.Id] = item
 			}
@@ -440,15 +459,17 @@ func GetItem(itemId int) (*models.Item, error) {
 	}
 }
 
-func getItems() ([]models.Item, error) {
+func GetItems() ([]models.Item, error) {
 
 	if rows, err := db.Query("SELECT * FROM items"); err == nil {
 		items := []models.Item{}
 		for rows.Next() {
 			var item models.Item
-			if err := rows.Scan(&item.Id, &item.Type, &item.Skill, &item.SubSkill, &item.Text, &item.Weight); err != nil {
+			var text sql.Null[string]
+			if err := rows.Scan(&item.Id, &item.Type, &item.Skill, &item.SubSkill, &text, &item.Weight); err != nil {
 				return nil, err
 			} else {
+				if text.Valid { item.Text = template.HTML(text.V) }
 				items = append(items, item)
 			}
 		}
@@ -456,6 +477,23 @@ func getItems() ([]models.Item, error) {
 	} else {
 		return nil, err
 	}
+}
+
+func GetPunctuationCharacters() []string {
+
+	chars := []string{}
+	if rows, err := db.Query("SELECT * FROM punctuation"); err == nil {
+		for rows.Next() {
+			var char string
+			if err := rows.Scan(&char); err != nil {
+				log.Fatal(err)
+			}
+			chars = append(chars, char)
+		}
+	} else {
+		log.Fatal(err)
+	}
+	return chars
 }
 
 func GetTranslation(key string, lang string) string {
@@ -533,6 +571,30 @@ func GetSAStatements(al string, skill string) []models.SAStatement {
 		list = append(list, s)
     }
 	return list
+}
+
+func GetItemGrades() ([]models.ItemGrade, error) {
+
+	rows, err := db.Query("SELECT * FROM item_grading")
+	if err != nil {
+		log.Printf("Failed to get item grades: %s\n", err)
+		return nil, err
+	}
+	defer rows.Close()
+
+	itemGrades := []models.ItemGrade{}
+
+	for rows.Next() {
+		var itemGrade models.ItemGrade
+		if err := rows.Scan(&itemGrade.Tl, &itemGrade.Skill, &itemGrade.BookletId, &itemGrade.RawScore, &itemGrade.PPE, &itemGrade.SE, &itemGrade.Grade); err == nil {
+			itemGrades = append(itemGrades, itemGrade)
+		} else {
+			log.Printf("Failed to scan item grade: %s", err)
+			return nil, err
+		}
+	}
+
+	return itemGrades, nil
 }
 
 func GetSubSkills(al string) []map[string]string {
