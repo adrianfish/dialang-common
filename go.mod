@@ -1,3 +1,3 @@
-module github.com/dialangproject/common
+module github.com/adrianfish/dialang-common
 
 go 1.25.0

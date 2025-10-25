@@ -14,7 +14,6 @@ type TestLanguage struct {
 	TwoLetterCode string
 }
 
-
 type VSPTBand struct {
 	Locale string
 	Level string
